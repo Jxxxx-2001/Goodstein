@@ -1,0 +1,16 @@
+# Coq 编译产物
+*.vo
+*.glob
+*.vos
+*.vok
+*.aux
+
+# Makefile（由 coq_makefile 自动生成）
+Makefile
+.Makefile.d
+
+.vscode/
+
+# 备份/临时文件
+*~
+*.bak
