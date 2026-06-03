@@ -594,3 +594,206 @@ Proof.
     + apply cnf_t_lt_m; auto.
     + apply cnf_b_lt_m; auto.
 Qed.
+
+(* ===== 阶段 4：序数化算子 fn（底换成 ω，落入真正序数 R） ===== *)
+
+Definition G_fn n := \{\ λ u v,
+  ( dom(u) ∉ ω /\ v = μ )
+  \/ ( dom(u) ∈ ω /\ dom(u) ≺ n /\ v = dom(u) )
+  \/ ( dom(u) ∈ ω /\ n ≼ dom(u) /\
+       v = ω ^ u[get_t n (dom(u))]
+           ⋅ (get_k n (dom(u))) + u[get_b n (dom(u))] ) \}\.
+
+Lemma G_fn_fun : ∀ n, Function (G_fn n).
+Proof.
+  intros n. split. eapply PisRel.
+  intros x y1 y2 Hy1 Hy2. appoA2H Hy1. appoA2H Hy2.
+  destruct H0 as [[Ha1 Hb1]|[[Ha1 [Hb1 Hc1]]|[Ha1 [Hb1 Hc1]]]].
+  - destruct H2 as [[Ha2 Hb2]|[[Ha2 [Hb2 Hc2]]|[Ha2 [Hb2 Hc2]]]];
+    subst; auto; contradiction.
+  - destruct H2 as [[Ha2 Hb2]|[[Ha2 [Hb2 Hc2]]|[Ha2 [Hb2 Hc2]]]];
+    subst; auto; try contradiction.
+    destruct Hb2 as [Hg|Hg].
+    + New (Ord_Num_trans _ _ _ (nat_Ord _ Ha1) Hb1 Hg). NSym.
+    + subst. red in Hb1. NSym.
+  - destruct H2 as [[Ha2 Hb2]|[[Ha2 [Hb2 Hc2]]|[Ha2 [Hb2 Hc2]]]];
+    subst; auto; try contradiction.
+    destruct Hb1 as [Hg|Hg].
+    + New (Ord_Num_trans _ _ _ (nat_Ord _ Ha1) Hb2 Hg). NSym.
+    + subst. red in Hb2. NSym.
+Qed.
+
+Lemma G_fn' : ∀ n h m,
+  Function h -> Ordinal dom(h) -> m ∈ ω -> m ≺ n -> m ∈ dom(h)
+  -> (∀ x, Ordinal_Number x -> h[x] = (G_fn n)[h|(x)])
+  -> h[m] = m.
+Proof.
+  intros n h m Hfun Hord Hm Hlt Hdom Heq.
+  assert (Hom : Ordinal_Number m) by (apply nat_Ord; auto).
+  assert (Hens_m : Ensemble m) by (exists ω; auto).
+  rewrite Heq; auto.
+  pose proof (Property_res_dom h m Hfun Hord Hdom) as [Hres_ens Hdomres].
+  assert (Hmem : [h|(m), m] ∈ G_fn n).
+  { apply AxiomII'. split; [apply MKT49a; auto|].
+    right. left. rewrite Hdomres. auto. }
+  pose proof Property_Fun m (G_fn n) (h|(m)) (G_fn_fun n) Hmem.
+  symmetry; auto.
+Qed.
+
+Lemma G_fn'' : ∀ n h m,
+  Function h -> Ordinal dom(h) -> m ∈ ω -> n ≼ m -> m ∈ dom(h)
+  -> get_t n m ∈ m -> get_b n m ∈ m
+  -> h[get_t n m] ∈ R -> h[get_b n m] ∈ R -> get_k n m ∈ ω -> n ∈ ω
+  -> (∀ x, Ordinal_Number x -> h[x] = (G_fn n)[h|(x)])
+  -> h[m] = ω ^ h[get_t n m] ⋅ (get_k n m) + h[get_b n m].
+Proof.
+  intros n h m Hfun Hord Hm Hge Hdom Ht_in Hb_in Hht_R Hhb_R Hk_ω Hn_ω Heq.
+  assert (Hom : Ordinal_Number m) by (apply nat_Ord; auto).
+  assert (Hens_m : Ensemble m) by (exists ω; auto).
+  rewrite Heq; auto.
+  pose proof (Property_res_dom h m Hfun Hord Hdom) as [Hres_ens Hdomres].
+  pose proof (Property_res h m (get_t n m) Hfun Hord Hdom Ht_in) as [Hrt _].
+  pose proof (Property_res h m (get_b n m) Hfun Hord Hdom Hb_in) as [Hrb _].
+  set (v := ω ^ (h|(m))[get_t n (dom(h|(m)))]
+            ⋅ (get_k n (dom(h|(m)))) + (h|(m))[get_b n (dom(h|(m)))]).
+  assert (Hv_eq : v = ω ^ h[get_t n m] ⋅ (get_k n m) + h[get_b n m]).
+  { unfold v. rewrite Hdomres, Hrt, Hrb. auto. }
+  assert (Hv_R : v ∈ R).
+  { rewrite Hv_eq. apply R_Add_in_R.
+    - apply R_Mult_in_R.
+      + apply R_Exp_in_R. apply MKT138. exact Hht_R.
+      + apply nat_Ord; exact Hk_ω.
+    - exact Hhb_R. }
+  assert (Hv_ens : Ensemble v) by (exists R; auto).
+  assert (Hmem : [h|(m), v] ∈ G_fn n).
+  { apply AxiomII'. split; [apply MKT49a; auto|].
+    right. right. rewrite Hdomres. unfold v. rewrite Hdomres. auto. }
+  pose proof Property_Fun v (G_fn n) (h|(m)) (G_fn_fun n) Hmem as Heqv.
+  rewrite <- Heqv, Hv_eq. auto.
+Qed.
+
+Lemma fn_aux : ∀ n, natural_num n -> Two ≼ n ->
+  ∀ h, Function h -> Ordinal dom(h)
+  -> (∀ x, Ordinal_Number x -> h[x] = (G_fn n)[h|(x)])
+  -> ∀ m, m ∈ ω -> m ∈ dom(h) /\ h[m] ∈ R.
+Proof.
+  intros n Hn Hn2 h Hfun Hord Heq.
+  New (nat_Ord _ Hn). New (Two_le_One_lt _ Hn Hn2).
+  rename H into Hon. rename H0 into Hn1.
+  assert (Hstep : ∀ k, k ∈ ω -> (∀ j, j ≺ k -> (j ∈ dom(h) /\ h[j] ∈ R))
+    -> (k ∈ dom(h) /\ h[k] ∈ R)).
+  { intros k Hk IH.
+    assert (Hok : Ordinal_Number k) by (apply nat_Ord; auto).
+    assert (Hsub : k ⊂ dom(h)) by (red; intros j Hj; apply IH; auto).
+    assert (Hdomr : dom(h|(k)) = k) by (rewrite MKT126b; auto; apply MKT30; auto).
+    assert (Hfr : Function (h|(k))) by (apply MKT126a; auto).
+    assert (Henr : Ensemble (h|(k))).
+    { apply MKT75; auto. rewrite Hdomr. exists ω; auto. }
+    assert (Hens_k : Ensemble k) by (exists ω; auto).
+    New (Heq k Hok).
+    assert (Hcase : k ≺ n \/ n ≼ k).
+    { destruct (Ord_Num_tri k n Hok Hon) as [Hc|[Hc|Hc]]; auto.
+      - right; right; auto.
+      - right; left; auto. }
+    destruct Hcase as [Hlt | Hge].
+    - (* k ≺ n *)
+      assert (Hmem : [h|(k), k] ∈ G_fn n).
+      { apply AxiomII'. split; [apply MKT49a; auto|].
+        right. left. rewrite Hdomr. auto. }
+      pose proof Property_Fun k (G_fn n) (h|(k)) (G_fn_fun n) Hmem as Hval.
+      rewrite H, <- Hval. split.
+      + apply MKT69b', MKT19. rewrite H, <- Hval; auto.
+      + apply nat_Ord; auto.
+    - (* n ≼ k *)
+      assert (Ht_in : get_t n k ∈ k) by (apply cnf_t_lt_m; auto).
+      assert (Hb_in : get_b n k ∈ k) by (apply cnf_b_lt_m; auto).
+      assert (Ht_domr : get_t n k ∈ dom(h|(k))) by (rewrite Hdomr; auto).
+      assert (Hb_domr : get_b n k ∈ dom(h|(k))) by (rewrite Hdomr; auto).
+      pose proof (MKT126c h k Hfun (get_t n k) Ht_domr) as Hct.
+      pose proof (MKT126c h k Hfun (get_b n k) Hb_domr) as Hcb.
+      assert (Hht : h[get_t n k] ∈ R) by (apply IH; auto).
+      assert (Hhb : h[get_b n k] ∈ R) by (apply IH; auto).
+      pose proof (cnf_spec n k Hn Hk Hge Hn2) as Hsp.
+      destruct Hsp as [_ [_ [_ [_ [_ [Hk_ω _]]]]]].
+      set (val := ω ^ h[get_t n k] ⋅ (get_k n k) + h[get_b n k]).
+      assert (Hval_R : val ∈ R).
+      { unfold val. apply R_Add_in_R.
+        - apply R_Mult_in_R.
+          + apply R_Exp_in_R. apply MKT138. exact Hht.
+          + apply nat_Ord; exact Hk_ω.
+        - exact Hhb. }
+      set (v0 := ω ^ (h|(k))[get_t n (dom(h|(k)))]
+                 ⋅ (get_k n (dom(h|(k)))) + (h|(k))[get_b n (dom(h|(k)))]).
+      assert (Hv0_eq : v0 = val).
+      { unfold v0, val. rewrite Hdomr, Hct, Hcb. auto. }
+      assert (Hv0_R : v0 ∈ R) by (rewrite Hv0_eq; auto).
+      assert (Hv0_ens : Ensemble v0) by (exists R; auto).
+      assert (Hmem : [h|(k), v0] ∈ G_fn n).
+      { apply AxiomII'. split; [apply MKT49a; [exact Henr|exact Hv0_ens]|].
+        right. right. split; [rewrite Hdomr; exact Hk|].
+        split; [rewrite Hdomr; exact Hge|]. unfold v0; reflexivity. }
+      pose proof Property_Fun v0 (G_fn n) (h|(k)) (G_fn_fun n) Hmem as Hval.
+      rewrite H, <- Hval. split; [|rewrite Hv0_eq; exact Hval_R].
+      apply MKT69b', MKT19. rewrite H, <- Hval; auto. }
+  intros m Hm.
+  assert (HPΦ : Φ ∈ dom(h) /\ h[Φ] ∈ R).
+  { apply Hstep; auto. intros j Hj. exfalso. apply (@MKT16 j); auto. }
+  exact (The_Second_Mathematical_Induction
+    (fun k => k ∈ dom(h) /\ h[k] ∈ R) HPΦ Hstep m Hm).
+Qed.
+
+(* 序数化算子 fn：取满足 MKT128 方程的唯一 h 的值 h[m] *)
+Definition fn n m := ∩ \{ λ u, ∀ h, Function h -> Ordinal dom(h)
+   -> (∀ x, Ordinal_Number x -> h[x] = (G_fn n)[h|(x)])
+   -> u = h[m] \}.
+
+(* fn 的主性质：落 R + 两条递归方程 *)
+Theorem fn_spec : ∀ n, natural_num n -> Two ≼ n ->
+  (∀ m, m ∈ ω -> fn n m ∈ R)
+  /\ (∀ m, m ∈ ω -> m ≺ n -> fn n m = m)
+  /\ (∀ m, m ∈ ω -> n ≼ m ->
+        fn n m = ω ^ (fn n (get_t n m)) ⋅ (get_k n m)
+                 + (fn n (get_b n m))).
+Proof.
+  intros n Hn Hn2.
+  New (MKT128 (G_fn n)). destruct H as [h0 [[Hf0 [Ho0 He0]] Hu0]].
+  assert (fn_val : ∀ m, m ∈ ω -> fn n m = h0[m]).
+  { intros m Hm.
+    New (fn_aux n Hn Hn2 h0 Hf0 Ho0 He0 m Hm). destruct H as [Hmdom HmR].
+    assert (Hens : Ensemble (h0[m])) by (exists R; auto).
+    unfold fn.
+    assert (Hsing : \{ λ u, ∀ h, Function h -> Ordinal dom(h)
+       -> (∀ x, Ordinal_Number x -> h[x] = (G_fn n)[h|(x)])
+       -> u = h[m] \} = [h0[m]]).
+    { eqext.
+      - appA2H H. apply MKT41; auto.
+      - apply MKT41 in H; auto. subst z. appA2G. intros h Hfh Hoh Heh.
+        assert (h = h0) by (symmetry; apply Hu0; auto). subst h. auto. }
+    rewrite Hsing. apply MKT44 in Hens as [HI _]. exact HI. }
+  assert (Htω : ∀ m, m ∈ ω -> n ≼ m -> get_t n m ∈ ω).
+  { intros m Hm Hge. apply MaxinExp_in_ω; auto. }
+  assert (Hbω : ∀ m, m ∈ ω -> n ≼ m -> get_b n m ∈ ω).
+  { intros m Hm Hge. pose proof (cnf_spec n m Hn Hm Hge Hn2) as Hsp.
+    destruct Hsp as [_ [_ [_ [_ [_ [_ Hbω]]]]]]. auto. }
+  split; [|split].
+  - (* ∈ R *)
+    intros m Hm. rewrite fn_val; auto.
+    New (fn_aux n Hn Hn2 h0 Hf0 Ho0 He0 m Hm). tauto.
+  - (* m ≺ n *)
+    intros m Hm Hlt. rewrite fn_val; auto.
+    New (fn_aux n Hn Hn2 h0 Hf0 Ho0 He0 m Hm). destruct H as [Hmdom _].
+    apply (G_fn' n h0 m); auto.
+  - (* n ≼ m *)
+    intros m Hm Hge.
+    assert (Htm : get_t n m ∈ ω) by (apply Htω; auto).
+    assert (Hbm : get_b n m ∈ ω) by (apply Hbω; auto).
+    rewrite fn_val; auto. rewrite (fn_val (get_t n m) Htm), (fn_val (get_b n m) Hbm).
+    New (fn_aux n Hn Hn2 h0 Hf0 Ho0 He0 m Hm). destruct H as [Hmdom _].
+    pose proof (cnf_spec n m Hn Hm Hge Hn2) as Hsp.
+    destruct Hsp as [_ [_ [_ [_ [_ [Hk_ω _]]]]]].
+    New (fn_aux n Hn Hn2 h0 Hf0 Ho0 He0 (get_t n m) Htm). destruct H as [_ Hht].
+    New (fn_aux n Hn Hn2 h0 Hf0 Ho0 He0 (get_b n m) Hbm). destruct H as [_ Hhb].
+    apply (G_fn'' n h0 m); auto.
+    + apply cnf_t_lt_m; auto.
+    + apply cnf_b_lt_m; auto.
+Qed.
