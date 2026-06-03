@@ -11,5 +11,6 @@ Sum_Function.v
 Cantor_Normal_Form.v
 Cantor_Normal_Form0.v
 Cantor_Normal_Form1.v
+Cantor_Normal_Form2.v
 Goodstein.v
 # 如果还有其他文件，在这里换行写上
