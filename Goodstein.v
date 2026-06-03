@@ -1390,3 +1390,290 @@ Proof.
            (fun m => fn (PlusOne n) (Sn n m) = fn n m)); auto.
   apply Hstep; [apply MKT135a | intros j Hj; exfalso; eapply (@MKT16 j); eauto].
 Qed.
+
+
+(**********************************************************************)
+(* 阶段 6：古德斯坦序列 gₙ 与下降论证                                  *)
+(*                                                                    *)
+(* 序列以「步数 j」为下标（从底 2 起）：                                  *)
+(*   底 gbase m Φ = Two，gbase m (PlusOne j) = PlusOne (gbase m j)；     *)
+(*   值 gval  m Φ = m，  gval  m (PlusOne j) = ∪(Sₙ_{gbase}(gval))（−1）。*)
+(* 即第 j 步底为 Two+j、值为该底下的古德斯坦数。                          *)
+(**********************************************************************)
+
+(* 非零自然数是某自然数的后继 *)
+Lemma pred_in_ω : ∀ x, x ∈ ω -> x <> Φ -> ∃ p, p ∈ ω /\ x = PlusOne p.
+Proof.
+  intros x Hx Hne.
+  New (ω_Num_is_Suc_Ord x Hx Hne). destruct H as [p [HpO Hxeq]].
+  exists p. split; [ | auto].
+  assert (Hp_in_x : p ∈ x). { rewrite Hxeq. appA2G. }
+  New MKT138. appA2H H. destruct H0 as [Hc Hfull]. apply Hfull in Hx; auto.
+Qed.
+
+(* 前驱（−1）保持落在 ω 内 *)
+Lemma union_pred_in_ω : ∀ x, x ∈ ω -> ∪x ∈ ω.
+Proof.
+  intros x Hx. TF (x = Φ).
+  - subst x. rewrite MKT24'. apply MKT135a.
+  - New (pred_in_ω x Hx H). destruct H0 as [p [Hp Hxeq]].
+    assert (HpR : p ∈ R). { New MKT138. eapply trans_Ord_Num; eauto. }
+    rewrite Hxeq. rewrite MKT124; auto.
+Qed.
+
+(* 基值算子（常值 [Two, m]）与步进算子（推进配对 [base, val]）*)
+Definition Gbase m := \{\ λ u v, u ∈ μ /\ v = [Two, m] \}\.
+
+Definition Gstep := \{\ λ u v, u ∈ μ /\
+  ( ( First u ∈ ω /\ Second u ∈ ω /\ Two ≼ First u
+      /\ v = [PlusOne (First u), ∪(Sn (First u) (Second u))] )
+    \/ ( ~ (First u ∈ ω /\ Second u ∈ ω /\ Two ≼ First u) /\ v = Φ ) ) \}\.
+
+Lemma OnTo_Gbase : ∀ m, Ensemble m -> OnTo (Gbase m) μ μ.
+Proof.
+  intros m Hm.
+  assert (Hpair : Ensemble ([Two, m])).
+  { apply MKT49a; auto. }
+  repeat split.
+  - eapply PisRel.
+  - intros. appoA2H H. destruct H1. appoA2H H0. destruct H3. subst; auto.
+  - eqext. eapply MKT19; eauto. appA2G. exists ([Two,m]). appoA2G.
+  - red. intros. eapply MKT19; eauto.
+Qed.
+
+(* 步进值是集合（关键：换底结果 Sₙ 落在 ω 内，故 ∪ 与配对都是集合）*)
+Lemma step_val_Ens : ∀ z, First z ∈ ω -> Second z ∈ ω -> Two ≼ First z ->
+  Ensemble ([PlusOne (First z), ∪(Sn (First z) (Second z))]).
+Proof.
+  intros z H1 H2 H3.
+  assert (Hnnat : natural_num (First z)) by (red; auto).
+  New (Sn_spec (First z) Hnnat H3). destruct H as [Hsω _].
+  pose proof (Hsω (Second z) H2) as Hsn.
+  pose proof (union_pred_in_ω _ Hsn) as Husn.
+  apply MKT49a.
+  - apply (MKT134) in H1; eauto.
+  - eauto.
+Qed.
+
+Lemma OnTo_Gstep : OnTo Gstep μ μ.
+Proof.
+  repeat split.
+  - eapply PisRel.
+  - intros. appoA2H H. destruct H1 as [_ Hd1]. appoA2H H0. destruct H1 as [_ Hd2].
+    destruct Hd1 as [[Ha1 [Hb1 [Hc1 Hv1]]]|[Hn1 Hv1]];
+    destruct Hd2 as [[Ha2 [Hb2 [Hc2 Hv2]]]|[Hn2 Hv2]]; subst; auto.
+    + elim Hn2; auto.
+    + elim Hn1; auto.
+  - eqext. eapply MKT19; eauto.
+    TF (First z ∈ ω /\ Second z ∈ ω /\ Two ≼ First z).
+    + destruct H0 as [Hf [Hs Ht]].
+      assert (Hens : Ensemble z) by (eapply MKT19; eauto).
+      appA2G. exists ([PlusOne (First z), ∪(Sn (First z) (Second z))]).
+      appoA2G; [apply MKT49a; [auto | apply step_val_Ens; auto]
+               | split; [eapply MKT19; eauto | left; repeat split; auto] ].
+    + assert (Hens : Ensemble z) by (eapply MKT19; eauto).
+      appA2G. exists Φ. appoA2G.
+  - red. intros. appA2H H. destruct H0 as [u Hu]. appoA2H Hu. destruct H1 as [_ Hd].
+    destruct Hd as [[Ha [Hb [Hc Hveq]]]|[Hn Hveq]]; subst.
+    + assert (Hens : Ensemble ([PlusOne (First u), ∪(Sn (First u) (Second u))]))
+        by (apply step_val_Ens; auto).
+      eapply MKT19; eauto.
+    + eapply MKT19; eauto.
+Qed.
+
+(* 用 Recursion_ω 在 ω 上对步数递归定义配对序列 gd m，
+   gval/gbase 分别取其第二、第一分量 *)
+Definition gd m := ∩ \{ λ F, OnTo F ω μ /\ F[Φ] = [Two, m]
+  /\ (∀ j, j ∈ ω -> F[PlusOne j] = Gstep[F[j]]) \}.
+
+Definition gval m j := Second ((gd m)[j]).
+Definition gbase m j := First ((gd m)[j]).
+
+Lemma gd_spec : ∀ m, m ∈ ω -> OnTo (gd m) ω μ /\ (gd m)[Φ] = [Two, m]
+  /\ (∀ j, j ∈ ω -> (gd m)[PlusOne j] = Gstep[(gd m)[j]]).
+Proof.
+  intros m Hm.
+  assert (Hmens : Ensemble m) by (exists ω; auto).
+  New (Recursion_ω.Recursion_ω (Gbase m) Gstep (OnTo_Gbase m Hmens) OnTo_Gstep).
+  destruct H as [F [[HF1 [HF2 HF3]] Huniq]].
+  assert (HbΦ : (Gbase m)[Φ] = [Two, m]).
+  { symmetry. apply Property_Fun; [apply (OnTo_Gbase m Hmens) | appoA2G]. }
+  rewrite HbΦ in HF2.
+  assert (HEnsF : Ensemble F).
+  { apply MKT75; [apply HF1 | destruct HF1 as [_ [Hd _]]; rewrite Hd; exists R; apply MKT138]. }
+  assert (Hgd : gd m = F).
+  { unfold gd.
+    match goal with |- ∩ ?S = _ => set (P := S) end.
+    assert (Hsing : P = [F]).
+    { unfold P. eqext.
+      - apply AxiomII in H as [Henz [HA [HB HC]]].
+        apply MKT41; auto. symmetry. apply Huniq.
+        split; [auto | split; [rewrite HB, HbΦ; auto | auto]].
+      - apply MKT41 in H; auto. subst z. appA2G. }
+    rewrite Hsing. apply MKT44 in HEnsF as [HI _]. exact HI. }
+  rewrite Hgd. split; [auto | split; auto].
+Qed.
+
+(* 步进算子在合法配对上的取值 *)
+Lemma Gstep_pair : ∀ b v, b ∈ ω -> v ∈ ω -> Two ≼ b ->
+  Gstep[[b, v]] = [PlusOne b, ∪(Sn b v)].
+Proof.
+  intros b v Hb Hv Hb2.
+  assert (Hbe : Ensemble b) by (exists ω; auto).
+  assert (Hve : Ensemble v) by (exists ω; auto).
+  assert (HF1 : First ([b,v]) = b) by (apply MKT54a; auto).
+  assert (HS1 : Second ([b,v]) = v) by (apply MKT54b; auto).
+  pose proof (step_val_Ens ([b,v])) as Hse. rewrite HF1, HS1 in Hse.
+  assert (Hvale : Ensemble ([PlusOne b, ∪(Sn b v)])) by (apply Hse; auto).
+  destruct OnTo_Gstep as [Hfun _].
+  symmetry. apply Property_Fun; [auto | ].
+  appoA2G.
+  split; [apply MKT19; apply MKT49a; auto | ].
+  left. rewrite HF1, HS1. repeat split; auto.
+Qed.
+
+(* 不变式：每一步 gd m [j] 都是合法配对 [base, val]（base,val∈ω, Two≼base）*)
+Lemma g_inv : ∀ m, m ∈ ω -> ∀ j, j ∈ ω ->
+  ∃ b v, (gd m)[j] = [b, v] /\ b ∈ ω /\ v ∈ ω /\ Two ≼ b.
+Proof.
+  intros m Hm.
+  New (gd_spec m Hm). destruct H as [Hon [HΦ Hrec]].
+  assert (HTwoω : Two ∈ ω) by (apply MKT134; apply MKT134; apply MKT135a).
+  apply Mathematical_Induction.
+  - exists Two, m. split; [exact HΦ | split; [auto | split; [auto | right; auto]]].
+  - intros k Hk [b [v [Hpair [Hb [Hv Hb2]]]]].
+    exists (PlusOne b), (∪(Sn b v)).
+    rewrite (Hrec k Hk), Hpair, (Gstep_pair b v Hb Hv Hb2).
+    split; [auto | split; [apply MKT134; auto | split]].
+    + apply union_pred_in_ω. New (Sn_spec b Hb Hb2). destruct H as [Hsω _]. apply (Hsω v Hv).
+    + assert (HbO : Ordinal_Number (PlusOne b)) by (apply Lem123; apply nat_Ord; auto).
+      assert (Hbb : b ≺ PlusOne b) by appA2G.
+      left. apply (Ord_Num_trans' Two b (PlusOne b) HbO Hb2 Hbb).
+Qed.
+
+(* 投影：gd m [j] = [gbase m j, gval m j]，且各分量满足不变式 *)
+Lemma g_proj : ∀ m, m ∈ ω -> ∀ j, j ∈ ω ->
+  (gd m)[j] = [gbase m j, gval m j] /\ gbase m j ∈ ω /\ gval m j ∈ ω /\ Two ≼ gbase m j.
+Proof.
+  intros m Hm j Hj.
+  New (g_inv m Hm j Hj). destruct H as [b [v [Hpair [Hb [Hv Hb2]]]]].
+  assert (Hbe : Ensemble b) by (exists ω; auto).
+  assert (Hve : Ensemble v) by (exists ω; auto).
+  assert (Hgb : gbase m j = b). { unfold gbase. rewrite Hpair. apply MKT54a; auto. }
+  assert (Hgv : gval m j = v). { unfold gval. rewrite Hpair. apply MKT54b; auto. }
+  rewrite Hgb, Hgv. split; [auto | split; [auto | split; auto]].
+Qed.
+
+Lemma gbase_in_ω : ∀ m, m ∈ ω -> ∀ j, j ∈ ω -> gbase m j ∈ ω.
+Proof. intros. New (g_proj m H j H0). destruct H1 as [_ [Hb _]]. auto. Qed.
+
+Lemma gval_in_ω : ∀ m, m ∈ ω -> ∀ j, j ∈ ω -> gval m j ∈ ω.
+Proof. intros. New (g_proj m H j H0). destruct H1 as [_ [_ [Hv _]]]. auto. Qed.
+
+Lemma gbase_ge_Two : ∀ m, m ∈ ω -> ∀ j, j ∈ ω -> Two ≼ gbase m j.
+Proof. intros. New (g_proj m H j H0). destruct H1 as [_ [_ [_ Hb2]]]. auto. Qed.
+
+(* 递归方程 *)
+Lemma gval_Φ : ∀ m, m ∈ ω -> gval m Φ = m.
+Proof.
+  intros m Hm. New (gd_spec m Hm). destruct H as [_ [HΦ _]].
+  unfold gval. rewrite HΦ.
+  apply MKT54b; [exists ω; apply MKT134; apply MKT134; apply MKT135a | exists ω; auto].
+Qed.
+
+Lemma gbase_S : ∀ m, m ∈ ω -> ∀ j, j ∈ ω -> gbase m (PlusOne j) = PlusOne (gbase m j).
+Proof.
+  intros m Hm j Hj.
+  New (gd_spec m Hm). destruct H as [_ [_ Hrec]].
+  New (g_proj m Hm j Hj). destruct H as [Hpair [Hb [Hv Hb2]]].
+  assert (Hstep : (gd m)[PlusOne j] = [PlusOne (gbase m j), ∪(Sn (gbase m j) (gval m j))]).
+  { rewrite (Hrec j Hj), Hpair. apply (Gstep_pair _ _ Hb Hv Hb2). }
+  assert (HE1 : Ensemble (PlusOne (gbase m j))) by (apply MKT134 in Hb; exists ω; auto).
+  assert (HE2 : Ensemble (∪(Sn (gbase m j) (gval m j)))).
+  { New (Sn_spec (gbase m j) Hb Hb2). destruct H as [Hsω _].
+    pose proof (Hsω (gval m j) Hv) as Hsn.
+    pose proof (union_pred_in_ω _ Hsn) as Hu. exists ω; auto. }
+  unfold gbase at 1. rewrite Hstep. apply MKT54a; auto.
+Qed.
+
+Lemma gval_S : ∀ m, m ∈ ω -> ∀ j, j ∈ ω ->
+  gval m (PlusOne j) = ∪(Sn (gbase m j) (gval m j)).
+Proof.
+  intros m Hm j Hj.
+  New (gd_spec m Hm). destruct H as [_ [_ Hrec]].
+  New (g_proj m Hm j Hj). destruct H as [Hpair [Hb [Hv Hb2]]].
+  assert (Hstep : (gd m)[PlusOne j] = [PlusOne (gbase m j), ∪(Sn (gbase m j) (gval m j))]).
+  { rewrite (Hrec j Hj), Hpair. apply (Gstep_pair _ _ Hb Hv Hb2). }
+  assert (HE1 : Ensemble (PlusOne (gbase m j))) by (apply MKT134 in Hb; exists ω; auto).
+  assert (HE2 : Ensemble (∪(Sn (gbase m j) (gval m j)))).
+  { New (Sn_spec (gbase m j) Hb Hb2). destruct H as [Hsω _].
+    pose proof (Hsω (gval m j) Hv) as Hsn.
+    pose proof (union_pred_in_ω _ Hsn) as Hu. exists ω; auto. }
+  unfold gval at 1. rewrite Hstep. apply MKT54b; auto.
+Qed.
+
+(* 下降步：当 gval > 0 时，⟨f_{gbase}(gval)⟩ 在序数中严格递减。
+   关键：g 非零 ⟹ Sₙ(g)≥1 ⟹ Sₙ(g)=PlusOne w，
+   故 g' = ∪(Sₙ(g)) = w ≺ Sₙ(g)，配 fₙ 单调 + f_{n+1}∘Sₙ=fₙ。*)
+Lemma goodstein_descent : ∀ m, m ∈ ω -> ∀ j, j ∈ ω -> gval m j <> Φ ->
+  fn (gbase m (PlusOne j)) (gval m (PlusOne j)) ≺ fn (gbase m j) (gval m j).
+Proof.
+  intros m Hm j Hj Hvne.
+  New (gbase_in_ω m Hm j Hj). rename H into Hn.
+  New (gval_in_ω m Hm j Hj). rename H into Hv.
+  New (gbase_ge_Two m Hm j Hj). rename H into Hn2.
+  assert (Hv1 : One ≼ gval m j).
+  { apply (R_Add_1 (gval m j) Φ); [apply nat_Ord; auto | apply Φ_is_Ord |
+      apply Φ_is_First_Ord; [apply nat_Ord; auto | auto]]. }
+  New (Sn_spec (gbase m j) Hn Hn2). destruct H as [Hsω0 _].
+  pose proof (Hsω0 (gval m j) Hv) as Hsω.
+  pose proof (Sn_ge_one (gbase m j) (gval m j) Hn Hn2 Hv Hv1) as Hs1.
+  assert (HsneΦ : Sn (gbase m j) (gval m j) <> Φ)
+    by (apply one_le_ne; [apply nat_Ord; auto | auto]).
+  destruct (pred_in_ω (Sn (gbase m j) (gval m j)) Hsω HsneΦ) as [w [Hw Hpw]].
+  rewrite (gbase_S m Hm j Hj), (gval_S m Hm j Hj).
+  rewrite Hpw, (MKT124 w (nat_Ord _ Hw)).
+  assert (HsucN : PlusOne (gbase m j) ∈ ω) by (apply MKT134; auto).
+  assert (Hnn' : gbase m j ≺ PlusOne (gbase m j)) by appA2G.
+  assert (HsucO : Ordinal_Number (PlusOne (gbase m j))) by (apply Lem123; apply nat_Ord; auto).
+  assert (Hn2' : Two ≼ PlusOne (gbase m j))
+    by (left; apply (Ord_Num_trans' Two (gbase m j) (PlusOne (gbase m j)) HsucO Hn2 Hnn')).
+  assert (Hmono : fn (PlusOne (gbase m j)) w
+                  ≺ fn (PlusOne (gbase m j)) (Sn (gbase m j) (gval m j))).
+  { apply (fn_mono (PlusOne (gbase m j)) HsucN Hn2' (Sn (gbase m j) (gval m j)) Hsω w).
+    rewrite Hpw. appA2G. }
+  rewrite (fn_Sn (gbase m j) Hn Hn2 (gval m j) Hv) in Hmono. exact Hmono.
+Qed.
+
+(* 难点 5：序数中不存在严格 ∈-递减的 ω→R 序列。
+   由 Lemma121（非空序数子类有 ∈-极小元 ∩C）反证。*)
+Lemma no_inf_descent : ∀ A : Class -> Class,
+  (∀ j, j ∈ ω -> A j ∈ R) -> (∀ j, j ∈ ω -> A (PlusOne j) ≺ A j) -> False.
+Proof.
+  intros A HAR Hdesc.
+  set (C := \{ λ z, ∃ j, j ∈ ω /\ z = A j \}).
+  assert (HCsub : C ⊂ R).
+  { red. intros z Hz. appA2H Hz. destruct H0 as [j [Hj Hzeq]]. subst z. apply HAR; auto. }
+  assert (HAΦC : A Φ ∈ C). { appA2G. }
+  assert (HCne : C <> Φ) by (intro He; rewrite He in HAΦC; eapply MKT16; eauto).
+  pose proof (Lemma121 C HCsub HCne) as [Hmin Hno].
+  appA2H Hmin. destruct H0 as [j0 [Hj0 Heq]].
+  assert (HsC : A (PlusOne j0) ∈ C). { appA2G. }
+  assert (Hlt : A (PlusOne j0) ≺ ∩C). { rewrite Heq. apply Hdesc; auto. }
+  apply (Hno (A (PlusOne j0)) HsC). red. appoA2G.
+Qed.
+
+(**********************************************************************)
+(* 阶段 7：古德斯坦定理 —— 从任意自然数出发的序列必在有限步内归零        *)
+(**********************************************************************)
+Theorem Goodstein : ∀ m, m ∈ ω -> ∃ j, j ∈ ω /\ gval m j = Φ.
+Proof.
+  intros m Hm. apply NNPP. intro Hno.
+  assert (Hall : ∀ j, j ∈ ω -> gval m j <> Φ).
+  { intros j Hj Heq. apply Hno. exists j; auto. }
+  apply (no_inf_descent (fun j => fn (gbase m j) (gval m j))).
+  - intros j Hj.
+    New (fn_spec (gbase m j) (gbase_in_ω m Hm j Hj) (gbase_ge_Two m Hm j Hj)).
+    destruct H as [HfR _]. apply HfR. apply gval_in_ω; auto.
+  - intros j Hj. apply (goodstein_descent m Hm j Hj (Hall j Hj)).
+Qed.
