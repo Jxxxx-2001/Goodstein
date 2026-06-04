@@ -1,4 +1,4 @@
-Require Export OrdinalNum.Cantor_Normal_Form1.
+Require Export OrdinalNum.Cantor_Normal_Form.
 
 Notation One := (PlusOne Φ).
 Notation Two := (PlusOne (PlusOne Φ)).
