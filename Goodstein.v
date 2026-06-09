@@ -867,14 +867,6 @@ Proof.
     New (Ord_Num_trans'' _ _ _ Ha Hlt H0). NSym.
 Qed.
 
-(* ≼ 的传递性 *)
-Lemma le_trans : ∀ a b c, Ordinal_Number c -> a ≼ b -> b ≼ c -> a ≼ c.
-Proof.
-  intros a b c Hc Hab Hbc. destruct Hab as [H|H].
-  - destruct Hbc as [H1|H1]; [left; eapply Ord_Num_trans; eauto | left; rewrite <- H1; auto].
-  - rewrite H; auto.
-Qed.
-
 (* One ≼ x ⟹ x ≠ Φ *)
 Lemma one_le_ne : ∀ x, Ordinal_Number x -> One ≼ x -> x <> Φ.
 Proof.
@@ -911,13 +903,13 @@ Proof.
   assert (Hnek_O : Ordinal_Number (n ^ e ⋅ k)) by (apply R_Mult_in_R; auto).
   assert (Hkne : k <> Φ) by (apply one_le_ne; auto).
   assert (Hge : n ^ e ≼ M).
-  { apply (le_trans (n ^ e) (n ^ e ⋅ k) M HMO).
+  { apply (Le_trans (n ^ e) (n ^ e ⋅ k) M HMO).
     - apply R_Mult_1; auto.
     - rewrite HMeq. apply R_Add_3'; auto. }
   assert (Hlt : M ≺ n ^ (PlusOne e)).
   { rewrite HMeq, Exp_R_Suc; auto. apply Mult_Union'; auto. }
   assert (Hone_le_M : One ≼ M).
-  { apply (le_trans One n M HMO); [left; auto | auto]. }
+  { apply (Le_trans One n M HMO); [left; auto | auto]. }
   New (CNF_1 n M HnO HMO H Hone_le_M). destruct H0 as [_ Hmx_le].
   New (MaxinExp_maximal n M Hn HM Hnm Hn2).
   New (MaxinExp_in_ω n M Hn HM Hnm Hn2).
@@ -1008,8 +1000,8 @@ Proof.
     assert (Hfull : Ordinal_Number (ω ^ (fn n t) ⋅ k + fn n b)) by (apply R_Add_in_R; auto).
     assert (HΦlt : Φ ≺ ω ^ (fn n t)) by (apply (R_Exp_3' (fn n t) ω HftR Hω (MKT134 MKT135a))).
     assert (HoneE : One ≼ ω ^ (fn n t)) by (apply R_Add_1; auto; apply Φ_is_Ord).
-    apply (le_trans One (ω ^ (fn n t)) _ Hfull); auto.
-    apply (le_trans (ω ^ (fn n t)) (ω ^ (fn n t) ⋅ k) _ Hfull).
+    apply (Le_trans One (ω ^ (fn n t)) _ Hfull); auto.
+    apply (Le_trans (ω ^ (fn n t)) (ω ^ (fn n t) ⋅ k) _ Hfull).
     + apply R_Mult_1; auto. apply nat_Ord; auto. apply one_le_ne; auto. apply nat_Ord; auto.
     + apply R_Add_3'; auto.
 Qed.
@@ -1040,8 +1032,8 @@ Proof.
     - left. New (Exp_R_PrOrder_a One (fn n t) ω (Lem123 Φ Φ_is_Ord) HftR Hω (MKT134 MKT135a) Hlt1).
       rewrite H0 in H1. exact H1.
     - rewrite <- Heq1, H0; right; auto. }
-  apply (le_trans ω (ω ^ (fn n t)) _ Hfull); auto.
-  apply (le_trans (ω ^ (fn n t)) (ω ^ (fn n t) ⋅ k) _ Hfull).
+  apply (Le_trans ω (ω ^ (fn n t)) _ Hfull); auto.
+  apply (Le_trans (ω ^ (fn n t)) (ω ^ (fn n t) ⋅ k) _ Hfull).
   - apply R_Mult_1; auto. apply nat_Ord; auto. apply one_le_ne; auto. apply nat_Ord; auto.
   - apply R_Add_3'; auto.
 Qed.
@@ -1098,7 +1090,7 @@ Proof.
         assert (HfbpR : fn n bp ∈ R) by (apply Hfn_R; auto).
         assert (Htp_lt_mp : tp ≺ mp) by (apply cnf_t_lt_m; auto).
         assert (Hbp_lt_mp : bp ≺ mp) by (apply cnf_b_lt_m; auto).
-        assert (Hone_le_m : One ≼ m) by (apply (le_trans One n m HmO); [left; auto | auto]).
+        assert (Hone_le_m : One ≼ m) by (apply (Le_trans One n m HmO); [left; auto | auto]).
         New (CNF_1 n m HnO HmO Hn1 Hone_le_m). destruct H1 as [_ Hnt_le_m].
         assert (Hnt_lt_mp : n ^ t ≺ mp) by (apply (Ord_Num_trans' (n ^ t) m mp HmpO Hnt_le_m Hm)).
         assert (Hbound : fn n b ≺ ω ^ (fn n t)).
@@ -1163,8 +1155,8 @@ Proof.
     assert (Hfull : Ordinal_Number ((PlusOne n) ^ (Sn n t) ⋅ k + Sn n b)) by (apply R_Add_in_R; [exact Hmid | apply nat_Ord; auto]).
     assert (HΦlt : Φ ≺ (PlusOne n) ^ (Sn n t)) by (apply (R_Exp_3' (Sn n t) (PlusOne n) (nat_Ord _ Hstω) HsO Hn1')).
     assert (HoneE : One ≼ (PlusOne n) ^ (Sn n t)) by (apply R_Add_1; auto; apply Φ_is_Ord).
-    apply (le_trans One ((PlusOne n) ^ (Sn n t)) _ Hfull); auto.
-    apply (le_trans ((PlusOne n) ^ (Sn n t)) ((PlusOne n) ^ (Sn n t) ⋅ k) _ Hfull).
+    apply (Le_trans One ((PlusOne n) ^ (Sn n t)) _ Hfull); auto.
+    apply (Le_trans ((PlusOne n) ^ (Sn n t)) ((PlusOne n) ^ (Sn n t) ⋅ k) _ Hfull).
     + apply R_Mult_1; [exact HExpO | apply nat_Ord; auto | apply one_le_ne; [apply nat_Ord; auto | exact Hk1]].
     + apply R_Add_3'; [exact Hmid | apply nat_Ord; auto].
 Qed.
@@ -1199,8 +1191,8 @@ Proof.
     - left. pose proof (Exp_R_PrOrder_a One (Sn n t) (PlusOne n) (Lem123 Φ Φ_is_Ord) (nat_Ord _ Hstω) HsO Hn1' Hlt1) as Hmono.
       rewrite HpowOne in Hmono. exact Hmono.
     - rewrite <- Heq1, HpowOne; right; auto. }
-  apply (le_trans (PlusOne n) ((PlusOne n) ^ (Sn n t)) _ Hfull); auto.
-  apply (le_trans ((PlusOne n) ^ (Sn n t)) ((PlusOne n) ^ (Sn n t) ⋅ k) _ Hfull).
+  apply (Le_trans (PlusOne n) ((PlusOne n) ^ (Sn n t)) _ Hfull); auto.
+  apply (Le_trans ((PlusOne n) ^ (Sn n t)) ((PlusOne n) ^ (Sn n t) ⋅ k) _ Hfull).
   - apply R_Mult_1; [exact HExpO | apply nat_Ord; auto | apply one_le_ne; [apply nat_Ord; auto | exact Hk1]].
   - apply R_Add_3'; [exact Hmid | apply nat_Ord; auto].
 Qed.
@@ -1293,7 +1285,7 @@ Proof.
         assert (Hk_lt_s : k ≺ PlusOne n) by (apply (Ord_Num_trans k n (PlusOne n) HsucO Hknm Hnn')).
         assert (Htp_lt_mp : tp ≺ mp) by (apply cnf_t_lt_m; auto).
         assert (Hbp_lt_mp : bp ≺ mp) by (apply cnf_b_lt_m; auto).
-        assert (Hone_le_m : One ≼ m) by (apply (le_trans One n m HmO); [left; auto | auto]).
+        assert (Hone_le_m : One ≼ m) by (apply (Le_trans One n m HmO); [left; auto | auto]).
         New (CNF_1 n m HnO HmO Hn1 Hone_le_m). destruct H1 as [_ Hnt_le_m].
         assert (Hnt_lt_mp : n ^ t ≺ mp) by (apply (Ord_Num_trans' (n ^ t) m mp HmpO Hnt_le_m Hm)).
         assert (Hbound : Sn n b ≺ (PlusOne n) ^ (Sn n t)).
