@@ -94,9 +94,6 @@ Ordinal_Number.v          236 行   序数定义、三分律、后继/极限二�
 
 - [_CoqProject](_CoqProject)：逻辑路径声明（本工程为 `OrdinalNum`）与源文件清单
 - [LICENSE](LICENSE)：LGPL-2.1 许可全文
-- [Cantor_Normal_Form_说明.md](Cantor_Normal_Form_说明.md)、[Goodstein_说明.md](Goodstein_说明.md)：逐条陈述定义、引理与证明思路的说明文档
-- [doc/Goodstein实现计划.md](doc/Goodstein实现计划.md)：分阶段实现计划
-- [doc/集合论-古德斯坦.pdf](doc/集合论-古德斯坦.pdf)：证明的纸面推演稿
 
 ## 记号约定
 
