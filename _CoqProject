@@ -1,5 +1,4 @@
 -Q . OrdinalNum
--R /home/jxxxx/.opam/coq8.20/lib/coq/user-contrib/MorseKelley MorseKelley
 
 Ordinal_Number.v
 Recursion.v
@@ -11,3 +10,4 @@ Sum_Function.v
 Cantor_Normal_Form.v
 Goodstein.v
 # 如果还有其他文件，在这里换行写上
+# MorseKelley 库经 opam 安装后位于 user-contrib，由 Rocq 自动发现，无需 -R 声明

@@ -4,9 +4,11 @@
 *.vos
 *.vok
 *.aux
+.*.aux
 
-# Makefile（由 coq_makefile 自动生成）
+# Makefile 及其配置（由 coq_makefile 自动生成）
 Makefile
+Makefile.conf
 .Makefile.d
 
 .vscode/
